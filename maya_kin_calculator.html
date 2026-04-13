@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マヤ暦キンナンバー計算機</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+  background: #f2ede8;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.header { width: 100%; max-width: 480px; }
+.header img { width: 100%; display: block; }
+.header-fallback {
+  background: linear-gradient(135deg, #fff8f0, #fdf0e0);
+  padding: 28px 20px 22px;
+  text-align: center;
+  border-bottom: 3px solid #e0c090;
+}
+.header-fallback h1 { font-size: 1.5rem; color: #5a3d2b; letter-spacing: 0.1em; }
+.header-fallback p  { font-size: 0.85rem; color: #8a6a50; margin-top: 6px; }
+
+.container { width: 100%; max-width: 480px; padding: 20px 16px 60px; }
+
+/* 入力カード */
+.input-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 22px 18px;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.09);
+  margin-bottom: 18px;
+}
+.input-card h2 {
+  font-size: 0.88rem; color: #7a5a40;
+  margin-bottom: 16px; text-align: center; letter-spacing: 0.12em;
+}
+.date-row {
+  display: flex; gap: 6px; align-items: flex-end; justify-content: center;
+}
+.date-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.date-group label { font-size: 0.7rem; color: #a08060; font-weight: bold; letter-spacing: 0.05em; }
+select {
+  padding: 10px 8px; border: 2px solid #ddd0c0; border-radius: 10px;
+  font-size: 1rem; font-family: inherit; color: #5a3d2b; background: #fffcf8;
+  cursor: pointer; outline: none; transition: border-color 0.2s;
+}
+select:focus { border-color: #b07848; }
+#yearSelect  { width: 96px; }
+#monthSelect { width: 74px; }
+#daySelect   { width: 72px; }
+.sep { font-size: 1.2rem; color: #c0a080; padding-bottom: 10px; }
+
+.divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 18px 0 14px; color: #b09070; font-size: 0.8rem;
+}
+.divider::before, .divider::after { content:''; flex:1; border-top:1px solid #ddd0c0; }
+
+.kin-direct-row { display: flex; gap: 10px; align-items: center; }
+.kin-direct-row input {
+  flex: 1; padding: 12px 16px;
+  border: 2px solid #ddd0c0; border-radius: 10px;
+  font-size: 1.2rem; font-family: inherit;
+  color: #5a3d2b; background: #fffcf8;
+  outline: none; transition: border-color 0.2s;
+}
+.kin-direct-row input:focus { border-color: #b07848; }
+.kin-direct-row input::placeholder { color: #c0a888; font-size: 0.9rem; }
+
+.btn {
+  display: block; width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #b86830 0%, #8a4818 100%);
+  color: #fff; border: none; border-radius: 12px;
+  font-size: 1.05rem; font-family: inherit; font-weight: bold;
+  letter-spacing: 0.12em; cursor: pointer; margin-top: 18px;
+  box-shadow: 0 4px 10px rgba(139,72,24,0.3);
+  transition: opacity 0.2s, transform 0.1s;
+}
+.btn:hover { opacity: 0.9; }
+.btn:active { transform: scale(0.98); }
+.btn-sm {
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #b86830 0%, #8a4818 100%);
+  color: #fff; border: none; border-radius: 10px;
+  font-size: 0.95rem; font-family: inherit; font-weight: bold;
+  cursor: pointer; white-space: nowrap;
+  box-shadow: 0 3px 8px rgba(139,72,24,0.3); transition: opacity 0.2s;
+}
+.btn-sm:hover { opacity: 0.9; }
+.leap-note { font-size: 0.7rem; color: #b08848; text-align: center; margin-top: 10px; min-height: 1.2em; }
+
+/* 結果エリア */
+.results { display: none; }
+.date-display {
+  text-align: center; font-size: 0.85rem;
+  color: #9a7a60; margin-bottom: 14px; letter-spacing: 0.05em;
+}
+
+/* 白カード共通 */
+.wcard {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+.wcard-label {
+  font-size: 0.65rem; letter-spacing: 0.1em;
+  font-weight: bold; color: #b09070; margin-bottom: 10px;
+}
+
+/* KIN ナンバー カード */
+.kin-card {
+  margin-bottom: 12px;
+  padding: 18px 20px 16px;
+}
+.kin-row {
+  display: flex; align-items: flex-end;
+  justify-content: center; gap: 10px;
+}
+.kin-num {
+  font-size: 3.8rem; font-weight: bold;
+  color: #1e1208; line-height: 1;
+}
+.badge-kuro {
+  background: #1a1a1a; color: #fff;
+  font-size: 0.68rem; padding: 3px 9px;
+  border-radius: 10px; font-weight: bold;
+  margin-bottom: 8px; display: none;
+}
+
+/* 2列グリッド */
+.two-col {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 12px;
+}
+
+/* 太陽の紋章 / WS カード */
+.seal-row {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 2px;
+}
+.seal-dot { font-size: 1rem; }
+.seal-jp  { font-size: 1rem; font-weight: bold; color: #1e1208; }
+
+/* 銀河の音カード */
+.tone-inner {
+  display: flex; align-items: center;
+  gap: 12px; margin-top: 4px;
+}
+.tone-num {
+  font-size: 2.6rem; font-weight: bold;
+  color: #1e1208; line-height: 1; flex-shrink: 0;
+}
+.tone-tags {
+  display: flex; flex-direction: column; gap: 5px;
+}
+.tone-tag {
+  background: #f2ede8; color: #7a5a40;
+  font-size: 0.72rem; padding: 3px 10px;
+  border-radius: 10px; font-weight: bold;
+  white-space: nowrap;
+}
+
+/* 特別なKIN カード */
+.special-inner {
+  display: flex; flex-direction: column;
+  gap: 6px; margin-top: 4px;
+}
+.badge {
+  font-size: 0.72rem; font-weight: bold;
+  padding: 4px 12px; border-radius: 10px;
+  display: inline-block;
+}
+.badge-zettai   { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+.badge-tokushu  { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
+.badge-kyokusei { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+.no-special { font-size: 0.8rem; color: #c0a888; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <img src="data:image/jpeg;base64,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" alt="あなたのキンナンバー"
+       onerror="this.style.display='none';document.getElementById('hf').style.display='block';">
+  <div id="hf" class="header-fallback" style="display:none;">
+    <h1>あなたのキンナンバー</h1>
+    <p>〜マヤ暦で本質や役割がわかります〜</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 入力カード -->
+  <div class="input-card">
+    <h2>生 年 月 日 を 入 力</h2>
+    <div class="date-row">
+      <div class="date-group"><label>年（西暦）</label><select id="yearSelect"></select></div>
+      <span class="sep">/</span>
+      <div class="date-group"><label>月</label><select id="monthSelect"></select></div>
+      <span class="sep">/</span>
+      <div class="date-group"><label>日</label><select id="daySelect"></select></div>
+    </div>
+    <div class="leap-note" id="leapNote"></div>
+    <button class="btn" onclick="calcFromDate()">▶ キンナンバーを調べる</button>
+    <div class="divider">または</div>
+    <div style="font-size:0.8rem;color:#9a7a60;margin-bottom:8px;text-align:center;">KINナンバーから直接調べる</div>
+    <div class="kin-direct-row">
+      <input type="text" id="kinInput" placeholder="1 〜 260 を入力"
+             inputmode="numeric" pattern="[0-9]*"
+             onkeydown="if(event.key==='Enter')calcFromKin()">
+      <button class="btn-sm" onclick="calcFromKin()">調べる</button>
+    </div>
+  </div>
+
+  <!-- 結果エリア -->
+  <div class="results" id="results">
+    <div class="date-display" id="dateDisplay"></div>
+
+    <!-- KIN ナンバー（全幅） -->
+    <div class="wcard kin-card" style="margin-bottom:12px;text-align:center;">
+      <div class="wcard-label">KIN ナンバー</div>
+      <div class="kin-row">
+        <span class="kin-num" id="kinValue">—</span>
+        <span class="badge-kuro" id="kuroBadge">黒KIN</span>
+      </div>
+    </div>
+
+    <!-- 太陽の紋章 ｜ ウェイブスペル -->
+    <div class="two-col">
+      <div class="wcard">
+        <div class="wcard-label">太陽の紋章</div>
+        <div class="seal-row">
+          <span class="seal-dot" id="sealDot">●</span>
+          <span class="seal-jp"  id="sealJp">—</span>
+        </div>
+      </div>
+      <div class="wcard">
+        <div class="wcard-label">ウェイブスペル</div>
+        <div class="seal-row">
+          <span class="seal-dot" id="wsDot">●</span>
+          <span class="seal-jp"  id="wsJp">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 銀河の音 ｜ 特別なKIN -->
+    <div class="two-col">
+      <div class="wcard">
+        <div class="wcard-label">銀河の音</div>
+        <div class="tone-inner">
+          <span class="tone-num" id="toneValue">—</span>
+          <div class="tone-tags">
+            <span class="tone-tag" id="toneTokucho"></span>
+            <span class="tone-tag" id="toneYakuwari"></span>
+          </div>
+        </div>
+      </div>
+      <div class="wcard">
+        <div class="wcard-label">特別なKIN</div>
+        <div class="special-inner" id="specialInner"></div>
+      </div>
+    </div>
+
+  </div><!-- /results -->
+</div><!-- /container -->
+
+<script>
+
+const KIN_TABLE = [
+  [62,93,121,152,182,213,243,14,45,75,106,136],
+  [167,198,226,257,27,58,88,119,150,180,211,241],
+  [12,43,71,102,132,163,193,224,255,25,56,86],
+  [117,148,176,207,237,8,38,69,100,130,161,191],
+  [222,253,21,52,82,113,143,174,205,235,6,36],
+  [67,98,126,157,187,218,248,19,50,80,111,141],
+  [172,203,231,2,32,63,93,124,155,185,216,246],
+  [17,48,76,107,137,168,198,229,0,30,61,91],
+  [122,153,181,212,242,13,43,74,105,135,166,196],
+  [227,258,26,57,87,118,148,179,210,240,11,41],
+  [72,103,131,162,192,223,253,24,55,85,116,146],
+  [177,208,236,7,37,68,98,129,160,190,221,251],
+  [22,53,81,112,142,173,203,234,5,35,66,96],
+  [127,158,186,217,247,18,48,79,110,140,171,201],
+  [232,3,31,62,92,123,153,184,215,245,16,46],
+  [77,108,136,167,197,228,258,29,60,90,121,151],
+  [182,213,241,12,42,73,103,134,165,195,226,256],
+  [27,58,86,117,147,178,208,239,10,40,71,101],
+  [132,163,191,222,252,23,53,84,115,145,176,206],
+  [237,8,36,67,97,128,158,189,220,250,21,51],
+  [82,113,141,172,202,233,3,34,65,95,126,156],
+  [187,218,246,17,47,78,108,139,170,200,231,1],
+  [32,63,91,122,152,183,213,244,15,45,76,106],
+  [137,168,196,227,257,28,58,89,120,150,181,211],
+  [242,13,41,72,102,133,163,194,225,255,26,56],
+  [87,118,146,177,207,238,8,39,70,100,131,161],
+  [192,223,251,22,52,83,113,144,175,205,236,6],
+  [37,68,96,127,157,188,218,249,20,50,81,111],
+  [142,173,201,232,2,33,63,94,125,155,186,216],
+  [247,18,46,77,107,138,168,199,230,0,31,61],
+  [92,123,151,182,212,243,13,44,75,105,136,166],
+  [197,228,256,27,57,88,118,149,180,210,241,11],
+  [42,73,101,132,162,193,223,254,25,55,86,116],
+  [147,178,206,237,7,38,68,99,130,160,191,221],
+  [252,23,51,82,112,143,173,204,235,5,36,66],
+  [97,128,156,187,217,248,18,49,80,110,141,171],
+  [202,233,1,32,62,93,123,154,185,215,246,16],
+  [47,78,106,137,167,198,228,259,30,60,91,121],
+  [152,183,211,242,12,43,73,104,135,165,196,226],
+  [257,28,56,87,117,148,178,209,240,10,41,71],
+  [102,133,161,192,222,253,23,54,85,115,146,176],
+  [207,238,6,37,67,98,128,159,190,220,251,21],
+  [52,83,111,142,172,203,233,4,35,65,96,126],
+  [157,188,216,247,17,48,78,109,140,170,201,231],
+  [2,33,61,92,122,153,183,214,245,15,46,76],
+  [107,138,166,197,227,258,28,59,90,120,151,181],
+  [212,243,11,42,72,103,133,164,195,225,256,26],
+  [57,88,116,147,177,208,238,9,40,70,101,131],
+  [162,193,221,252,22,53,83,114,145,175,206,236],
+  [7,38,66,97,127,158,188,219,250,20,51,81],
+  [112,143,171,202,232,3,33,64,95,125,156,186],
+  [217,248,16,47,77,108,138,169,200,230,1,31],
+];
+
+const SEALS = [
+  null,
+  {jp:'赤い龍',           color:'#D85A30'},
+  {jp:'白い風',           color:'#B4B2A9'},
+  {jp:'青い夜',           color:'#378ADD'},
+  {jp:'黄色い種',         color:'#EF9F27'},
+  {jp:'赤い蛇',           color:'#D85A30'},
+  {jp:'白い世界の橋渡し', color:'#B4B2A9'},
+  {jp:'青い手',           color:'#378ADD'},
+  {jp:'黄色い星',         color:'#EF9F27'},
+  {jp:'赤い月',           color:'#D85A30'},
+  {jp:'白い犬',           color:'#B4B2A9'},
+  {jp:'青い猿',           color:'#378ADD'},
+  {jp:'黄色い人',         color:'#EF9F27'},
+  {jp:'赤い空歩く人',     color:'#D85A30'},
+  {jp:'白い魔法使い',     color:'#B4B2A9'},
+  {jp:'青い鷲',           color:'#378ADD'},
+  {jp:'黄色い戦士',       color:'#EF9F27'},
+  {jp:'赤い地球',         color:'#D85A30'},
+  {jp:'白い鏡',           color:'#B4B2A9'},
+  {jp:'青い嵐',           color:'#378ADD'},
+  {jp:'黄色い太陽',       color:'#EF9F27'},
+];
+
+const TONES = [
+  null,
+  {tokucho:'意思決定', yakuwari:'１つにする'},
+  {tokucho:'二極性',   yakuwari:'関係を築く'},
+  {tokucho:'活性化',   yakuwari:'チームづくり'},
+  {tokucho:'計測',     yakuwari:'解消する'},
+  {tokucho:'倍音',     yakuwari:'柱を立てる'},
+  {tokucho:'対等',     yakuwari:'展開する'},
+  {tokucho:'神秘',     yakuwari:'基準を示す'},
+  {tokucho:'調和',     yakuwari:'誘導する'},
+  {tokucho:'脈動',     yakuwari:'拡張する'},
+  {tokucho:'具現化',   yakuwari:'プロデュース'},
+  {tokucho:'浄化',     yakuwari:'改革する'},
+  {tokucho:'普遍化',   yakuwari:'安定させる'},
+  {tokucho:'集大成',   yakuwari:'変化を呼ぶ'},
+];
+
+const KURO = new Set([1,20,22,39,43,50,51,58,64,69,72,77,85,88,93,96,
+  106,107,108,109,110,111,112,113,114,115,
+  146,147,148,149,150,151,152,153,154,155,
+  165,168,173,176,184,189,192,197,203,210,211,218,222,239,241,260]);
+const ZETTAI   = new Set([19,38,57,76,95,114,133,152,171,190,209,228,247]);
+const TOKUSHU  = new Set([41,80,171,210]);
+const KYOKUSEI = new Set([10,30,50,55,75,95,115,120,140,160,180,185,205,225,245,250]);
+
+(function init() {
+  const ys = document.getElementById('yearSelect');
+  for (let y = 2065; y >= 1910; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y + '年';
+    if (y === 1990) o.selected = true;
+    ys.appendChild(o);
+  }
+  const ms = document.getElementById('monthSelect');
+  for (let m = 1; m <= 12; m++) {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m + '月';
+    ms.appendChild(o);
+  }
+  updateDays();
+  ys.addEventListener('change', updateDays);
+  ms.addEventListener('change', updateDays);
+})();
+
+function isLeap(y) {
+  return (y % 400 === 0) || (y % 4 === 0 && y % 100 !== 0);
+}
+
+function updateDays() {
+  const y = parseInt(document.getElementById('yearSelect').value, 10);
+  const m = parseInt(document.getElementById('monthSelect').value, 10);
+  const ds = document.getElementById('daySelect');
+  const cur = parseInt(ds.value, 10) || 1;
+  ds.innerHTML = '';
+  const max = new Date(y, m, 0).getDate();
+  for (let d = 1; d <= max; d++) {
+    const o = document.createElement('option');
+    o.value = d; o.textContent = d + '日';
+    if (d === Math.min(cur, max)) o.selected = true;
+    ds.appendChild(o);
+  }
+  document.getElementById('leapNote').textContent =
+    (isLeap(y) && m === 3) ? 'うるう年の3月生まれ → +1補正を適用します' : '';
+}
+
+function showResult(kin, label) {
+  const sealNum  = kin % 20 || 20;
+  const tone     = kin % 13 || 13;
+  const ws       = Math.ceil(kin / 13);
+  const wsLeader = ((ws - 1) * 13 + 1) % 20 || 20;
+
+  // KIN
+  document.getElementById('kinValue').textContent = kin;
+  const kb = document.getElementById('kuroBadge');
+  kb.style.display = KURO.has(kin) ? 'inline-block' : 'none';
+
+  // 太陽の紋章
+  const seal = SEALS[sealNum];
+  document.getElementById('sealDot').style.color = seal.color;
+  document.getElementById('sealJp').textContent  = seal.jp;
+
+  // WS
+  const wsSeal = SEALS[wsLeader];
+  document.getElementById('wsDot').style.color = wsSeal.color;
+  document.getElementById('wsJp').textContent  = wsSeal.jp;
+
+  // 銀河の音
+  document.getElementById('toneValue').textContent    = tone;
+  const td = TONES[tone];
+  document.getElementById('toneTokucho').textContent  = td.tokucho;
+  document.getElementById('toneYakuwari').textContent = td.yakuwari;
+
+  // 特別なKIN
+  const specials = [];
+  if (ZETTAI.has(kin))   specials.push({label:'絶対拡張キン', cls:'badge-zettai'});
+  if (TOKUSHU.has(kin))  specials.push({label:'特殊キン',     cls:'badge-tokushu'});
+  if (KYOKUSEI.has(kin)) specials.push({label:'極性キン',     cls:'badge-kyokusei'});
+  const si = document.getElementById('specialInner');
+  if (specials.length > 0) {
+    si.innerHTML = specials.map(s =>
+      '<span class="badge ' + s.cls + '">' + s.label + '</span>'
+    ).join('');
+  } else {
+    si.innerHTML = '<span class="no-special">なし</span>';
+  }
+
+  document.getElementById('dateDisplay').textContent = label;
+  const res = document.getElementById('results');
+  res.style.display = 'block';
+  setTimeout(function() { res.scrollIntoView({behavior:'smooth', block:'start'}); }, 80);
+}
+
+function calcFromDate() {
+  const y   = parseInt(document.getElementById('yearSelect').value, 10);
+  const m   = parseInt(document.getElementById('monthSelect').value, 10);
+  const d   = parseInt(document.getElementById('daySelect').value,   10);
+  const idx = (y - 1910) % 52;
+  const base = KIN_TABLE[idx][m - 1];
+  const adj  = (isLeap(y) && m === 3) ? 1 : 0;
+  let kin = base + d + adj;
+  while (kin > 260) kin -= 260;
+  while (kin <= 0)  kin += 260;
+  const mn = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  showResult(kin, y + '年' + mn[m-1] + d + '日生まれ');
+}
+
+function calcFromKin() {
+  const kin = parseInt(document.getElementById('kinInput').value.trim(), 10);
+  if (isNaN(kin) || kin < 1 || kin > 260) {
+    alert('KINナンバーは1〜260の数字を入力してください');
+    return;
+  }
+  showResult(kin, 'KIN ' + kin + ' の情報');
+}
+
+</script>
+</body>
+</html>
