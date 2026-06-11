@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>年齢→生まれ年 早見ツール</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+  background: #f2ede8;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.header {
+  width: 100%; max-width: 480px;
+  background: linear-gradient(135deg, #fff8f0, #fdf0e0);
+  padding: 24px 20px 18px;
+  text-align: center;
+  border-bottom: 3px solid #e0c090;
+}
+.header h1 { font-size: 1.3rem; color: #5a3d2b; letter-spacing: 0.08em; }
+.header p  { font-size: 0.8rem; color: #8a6a50; margin-top: 6px; }
+
+.container { width: 100%; max-width: 480px; padding: 20px 16px 60px; }
+
+.card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 22px 18px;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.09);
+  margin-bottom: 18px;
+}
+.card h2 {
+  font-size: 0.88rem; color: #7a5a40;
+  margin-bottom: 14px; text-align: center; letter-spacing: 0.12em;
+}
+
+.age-row {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.age-btn {
+  width: 52px; height: 52px;
+  border: 2px solid #ddd0c0; border-radius: 14px;
+  background: #fffcf8; color: #b07848;
+  font-size: 1.6rem; font-weight: bold;
+  cursor: pointer; transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.age-btn:active { background: #fdf0e0; }
+#ageInput {
+  width: 110px; padding: 12px 8px;
+  border: 2px solid #ddd0c0; border-radius: 12px;
+  font-size: 1.8rem; font-family: inherit; font-weight: bold;
+  color: #5a3d2b; background: #fffcf8;
+  text-align: center; outline: none;
+}
+#ageInput:focus { border-color: #b07848; }
+.age-unit { font-size: 1.1rem; color: #7a5a40; font-weight: bold; }
+
+.result-card { display: none; }
+.result-card.show { display: block; }
+
+.result-block {
+  border-radius: 14px;
+  padding: 16px 14px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.result-block.after  { background: #f0f7ee; border: 2px solid #b8d4ae; }
+.result-block.before { background: #fdf3e7; border: 2px solid #e8c9a0; }
+.result-label {
+  font-size: 0.8rem; font-weight: bold;
+  margin-bottom: 8px; letter-spacing: 0.06em;
+}
+.result-block.after  .result-label { color: #4e7a42; }
+.result-block.before .result-label { color: #a06a28; }
+.result-year {
+  font-size: 1.9rem; font-weight: bold; color: #5a3d2b;
+  line-height: 1.2;
+}
+.result-wareki {
+  font-size: 1.1rem; color: #7a5a40; margin-top: 4px;
+}
+.result-eto {
+  font-size: 0.85rem; color: #a08060; margin-top: 6px;
+}
+.hint {
+  font-size: 0.78rem; color: #a08060; text-align: center;
+  line-height: 1.6; margin-top: 4px;
+}
+.today {
+  font-size: 0.75rem; color: #b09070; text-align: center; margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>年齢 → 生まれ年 早見ツール</h1>
+  <p>年齢を入れると西暦・和暦がすぐわかる</p>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <h2>― 年齢を入力 ―</h2>
+    <div class="age-row">
+      <button class="age-btn" id="minusBtn">−</button>
+      <input type="number" id="ageInput" inputmode="numeric" min="0" max="120" placeholder="45">
+      <span class="age-unit">歳</span>
+      <button class="age-btn" id="plusBtn">＋</button>
+    </div>
+    <p class="today" id="todayLabel"></p>
+  </div>
+
+  <div class="card result-card" id="resultCard">
+    <h2>― 生まれ年 ―</h2>
+
+    <div class="result-block after">
+      <p class="result-label">✅ 今年の誕生日が もう来た 場合</p>
+      <p class="result-year" id="afterYear"></p>
+      <p class="result-wareki" id="afterWareki"></p>
+      <p class="result-eto" id="afterEto"></p>
+    </div>
+
+    <div class="result-block before">
+      <p class="result-label">🎂 今年の誕生日が まだ の場合</p>
+      <p class="result-year" id="beforeYear"></p>
+      <p class="result-wareki" id="beforeWareki"></p>
+      <p class="result-eto" id="beforeEto"></p>
+    </div>
+
+    <p class="hint">セッションでは「今年のお誕生日はもう来ましたか？」と<br>聞くだけで、どちらかが分かります</p>
+  </div>
+
+</div>
+
+<script>
+const thisYear = new Date().getFullYear();
+document.getElementById('todayLabel').textContent = `基準：${thisYear}年`;
+
+function toWareki(y) {
+  // 各元号の元年と最終年の境目（1月〜数ヶ月は前の元号の可能性あり）
+  if (y >= 2020) return `令和${y - 2018}年`;
+  if (y === 2019) return '平成31年／令和元年';
+  if (y >= 1990) return `平成${y - 1988}年`;
+  if (y === 1989) return '昭和64年／平成元年';
+  if (y >= 1927) return `昭和${y - 1925}年`;
+  if (y === 1926) return '大正15年／昭和元年';
+  if (y >= 1913) return `大正${y - 1911}年`;
+  if (y === 1912) return '明治45年／大正元年';
+  if (y >= 1869) return `明治${y - 1867}年`;
+  return '';
+}
+
+function toEto(y) {
+  const animals = ['子（ね）','丑（うし）','寅（とら）','卯（う）','辰（たつ）','巳（み）','午（うま）','未（ひつじ）','申（さる）','酉（とり）','戌（いぬ）','亥（い）'];
+  return '干支：' + animals[((y - 2020) % 12 + 12) % 12];
+}
+
+function update() {
+  const age = parseInt(document.getElementById('ageInput').value, 10);
+  const card = document.getElementById('resultCard');
+  if (isNaN(age) || age < 0 || age > 120) {
+    card.classList.remove('show');
+    return;
+  }
+  const after = thisYear - age;       // 誕生日が来た場合
+  const before = after - 1;           // まだの場合
+
+  document.getElementById('afterYear').textContent = `${after}年`;
+  document.getElementById('afterWareki').textContent = toWareki(after);
+  document.getElementById('afterEto').textContent = toEto(after);
+
+  document.getElementById('beforeYear').textContent = `${before}年`;
+  document.getElementById('beforeWareki').textContent = toWareki(before);
+  document.getElementById('beforeEto').textContent = toEto(before);
+
+  card.classList.add('show');
+}
+
+document.getElementById('ageInput').addEventListener('input', update);
+document.getElementById('plusBtn').addEventListener('click', () => {
+  const el = document.getElementById('ageInput');
+  el.value = (parseInt(el.value, 10) || 0) + 1;
+  update();
+});
+document.getElementById('minusBtn').addEventListener('click', () => {
+  const el = document.getElementById('ageInput');
+  const v = (parseInt(el.value, 10) || 0) - 1;
+  el.value = v < 0 ? 0 : v;
+  update();
+});
+</script>
+
+</body>
+</html>
