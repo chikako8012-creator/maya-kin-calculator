@@ -146,7 +146,9 @@ function seirekiToWareki(y) {
   return results;
 }
 
-document.getElementById('seirekiInput').addEventListener('input', () => {
+let syncing = false; // 連動中の無限ループ防止
+
+function updateSeireki() {
   const box = document.getElementById('seirekiResult');
   const main = document.getElementById('seirekiMain');
   const sub = document.getElementById('seirekiSub');
@@ -165,7 +167,21 @@ document.getElementById('seirekiInput').addEventListener('input', () => {
   box.classList.remove('error');
   main.textContent = res.join(' ／ ');
   sub.textContent = res.length > 1 ? '※この年は改元があったため、時期により元号が異なります' : '';
-});
+
+  // 下のカードにも反映（新しい方の元号を採用）
+  if (!syncing) {
+    syncing = true;
+    const e = ERAS.find(x => v >= x.start && x.end >= v);
+    if (e) {
+      document.getElementById('eraSelect').value = e.name;
+      document.getElementById('warekiInput').value = v - e.start + 1;
+      updateWareki();
+    }
+    syncing = false;
+  }
+}
+
+document.getElementById('seirekiInput').addEventListener('input', updateSeireki);
 
 // 和暦 → 西暦
 function warekiToSeireki(eraName, n) {
@@ -200,6 +216,14 @@ function updateWareki() {
   main.textContent = `西暦 ${res.year}年`;
   const others = seirekiToWareki(res.year).filter(w => !w.startsWith(era));
   sub.textContent = others.length ? `※同じ年：${others.join('／')}（改元の年）` : '';
+
+  // 上のカードにも反映
+  if (!syncing) {
+    syncing = true;
+    document.getElementById('seirekiInput').value = res.year;
+    updateSeireki();
+    syncing = false;
+  }
 }
 
 document.getElementById('eraSelect').addEventListener('change', updateWareki);
