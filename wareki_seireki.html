@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>和暦⇄西暦 変換ツール</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+  background: #f2ede8;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #5a3d2b;
+}
+.header {
+  width: 100%; max-width: 480px;
+  background: linear-gradient(135deg, #fff8f0, #fdf0e0);
+  padding: 22px 20px 16px;
+  text-align: center;
+  border-bottom: 3px solid #e0c090;
+}
+.header h1 { font-size: 1.25rem; letter-spacing: 0.08em; }
+.header p  { font-size: 0.78rem; color: #8a6a50; margin-top: 5px; }
+
+.container { width: 100%; max-width: 480px; padding: 18px 14px 60px; }
+
+.card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 20px 16px;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.09);
+  margin-bottom: 16px;
+}
+.card h2 {
+  font-size: 0.88rem; color: #7a5a40;
+  margin-bottom: 14px; text-align: center; letter-spacing: 0.1em;
+}
+
+.row { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; }
+
+input[type="number"], select {
+  padding: 12px 10px;
+  border: 2px solid #ddd0c0; border-radius: 12px;
+  font-size: 1.3rem; font-family: inherit; font-weight: bold;
+  color: #5a3d2b; background: #fffcf8;
+  text-align: center; outline: none;
+}
+input[type="number"]:focus, select:focus { border-color: #b07848; }
+#seirekiInput { width: 140px; }
+#eraSelect { width: 120px; font-size: 1.1rem; }
+#warekiInput { width: 100px; }
+.suffix { font-size: 1.05rem; font-weight: bold; color: #7a5a40; }
+
+.result {
+  margin-top: 16px;
+  background: #f0f7ee;
+  border: 2px solid #b8d4ae;
+  border-radius: 14px;
+  padding: 14px 10px;
+  text-align: center;
+  display: none;
+}
+.result.show { display: block; }
+.result .main { font-size: 1.5rem; font-weight: bold; color: #3c5a32; line-height: 1.4; }
+.result .sub  { font-size: 0.82rem; color: #6a8a5f; margin-top: 4px; }
+
+.result.error {
+  background: #fdf0ee;
+  border-color: #e8b8ae;
+}
+.result.error .main { font-size: 1rem; color: #a04030; }
+
+.hint { font-size: 0.74rem; color: #a08060; text-align: center; margin-top: 12px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🗓️ 和暦 ⇄ 西暦 変換ツール</h1>
+  <p>どちらからでも変換できます</p>
+</div>
+
+<div class="container">
+
+  <!-- 西暦 → 和暦 -->
+  <div class="card">
+    <h2>― 西暦 → 和暦 ―</h2>
+    <div class="row">
+      <input type="number" id="seirekiInput" inputmode="numeric" placeholder="1981">
+      <span class="suffix">年</span>
+    </div>
+    <div class="result" id="seirekiResult">
+      <p class="main" id="seirekiMain"></p>
+      <p class="sub" id="seirekiSub"></p>
+    </div>
+  </div>
+
+  <!-- 和暦 → 西暦 -->
+  <div class="card">
+    <h2>― 和暦 → 西暦 ―</h2>
+    <div class="row">
+      <select id="eraSelect">
+        <option value="令和">令和</option>
+        <option value="平成">平成</option>
+        <option value="昭和" selected>昭和</option>
+        <option value="大正">大正</option>
+        <option value="明治">明治</option>
+      </select>
+      <input type="number" id="warekiInput" inputmode="numeric" placeholder="56">
+      <span class="suffix">年</span>
+    </div>
+    <div class="result" id="warekiResult">
+      <p class="main" id="warekiMain"></p>
+      <p class="sub" id="warekiSub"></p>
+    </div>
+    <p class="hint">元年（1年）は「1」と入力してください</p>
+  </div>
+
+</div>
+
+<script>
+// 各元号の開始年・終了年（年単位）
+const ERAS = [
+  { name: '令和', start: 2019, end: 9999, max: null },
+  { name: '平成', start: 1989, end: 2019, max: 31 },
+  { name: '昭和', start: 1926, end: 1989, max: 64 },
+  { name: '大正', start: 1912, end: 1926, max: 15 },
+  { name: '明治', start: 1868, end: 1912, max: 45 },
+];
+
+function eraYearLabel(n) { return n === 1 ? '元年' : `${n}年`; }
+
+// 西暦 → 和暦
+function seirekiToWareki(y) {
+  if (y < 1868) return null;
+  const results = [];
+  for (const e of ERAS) {
+    if (y >= e.start && y <= e.end) {
+      const n = y - e.start + 1;
+      if (e.max === null || n <= e.max) results.push(`${e.name}${eraYearLabel(n)}`);
+    }
+  }
+  return results;
+}
+
+document.getElementById('seirekiInput').addEventListener('input', () => {
+  const box = document.getElementById('seirekiResult');
+  const main = document.getElementById('seirekiMain');
+  const sub = document.getElementById('seirekiSub');
+  const v = parseInt(document.getElementById('seirekiInput').value, 10);
+
+  if (isNaN(v) || String(v).length < 4) { box.classList.remove('show'); return; }
+
+  const res = seirekiToWareki(v);
+  box.classList.add('show');
+  if (!res || res.length === 0) {
+    box.classList.add('error');
+    main.textContent = '明治元年（1868年）以降に対応しています';
+    sub.textContent = '';
+    return;
+  }
+  box.classList.remove('error');
+  main.textContent = res.join(' ／ ');
+  sub.textContent = res.length > 1 ? '※この年は改元があったため、時期により元号が異なります' : '';
+});
+
+// 和暦 → 西暦
+function warekiToSeireki(eraName, n) {
+  const e = ERAS.find(x => x.name === eraName);
+  if (!e || n < 1) return null;
+  if (e.max !== null && n > e.max) return { over: true, max: e.max };
+  const thisYear = new Date().getFullYear();
+  if (e.max === null && e.start + n - 1 > thisYear + 1) return { over: true, max: thisYear + 1 - e.start + 1 };
+  return { year: e.start + n - 1 };
+}
+
+function updateWareki() {
+  const box = document.getElementById('warekiResult');
+  const main = document.getElementById('warekiMain');
+  const sub = document.getElementById('warekiSub');
+  const era = document.getElementById('eraSelect').value;
+  const n = parseInt(document.getElementById('warekiInput').value, 10);
+
+  if (isNaN(n)) { box.classList.remove('show'); return; }
+
+  const res = warekiToSeireki(era, n);
+  box.classList.add('show');
+  if (!res || res.over) {
+    box.classList.add('error');
+    main.textContent = res && res.over
+      ? `${era}は${res.max}年までです`
+      : '1以上の数字を入れてください';
+    sub.textContent = '';
+    return;
+  }
+  box.classList.remove('error');
+  main.textContent = `西暦 ${res.year}年`;
+  const others = seirekiToWareki(res.year).filter(w => !w.startsWith(era));
+  sub.textContent = others.length ? `※同じ年：${others.join('／')}（改元の年）` : '';
+}
+
+document.getElementById('eraSelect').addEventListener('change', updateWareki);
+document.getElementById('warekiInput').addEventListener('input', updateWareki);
+</script>
+
+</body>
+</html>
